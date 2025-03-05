@@ -112,7 +112,7 @@
                 </select>
             </td>
             <td>{{ elements["external wall"]["area"] | toFixed(1) }} <sub>m2</sub></td>
-            <td>{{ elements["external wall"]["uvalue"] | toFixed(2) }}</td>
+            <td><input type="text" class="form-control" v-model.number="elements['external wall']['uvalue']" @change="custom_uvalue('external_wall')" style="width:80px"></td>
             <td>{{ elements["external wall"]["heat_loss"] | toFixed(0) }} W</td>
             <td>{{ elements["external wall"]["cibse_heat_loss"] | toFixed(0) }} W</td>
         </tr>
@@ -124,7 +124,7 @@
                 </select>
             </td>
             <td>{{ elements["party wall"]["area"] | toFixed(1) }} <sub>m2</sub></td>
-            <td>{{ elements["party wall"]["uvalue"] | toFixed(2) }}</td>
+            <td><input type="text" class="form-control" v-model.number="elements['party wall']['uvalue']" @change="custom_uvalue('party_wall')" style="width:80px"></td>
             <td>{{ elements["party wall"]["heat_loss"] | toFixed(0) }} W</td>
             <td>{{ elements["party wall"]["cibse_heat_loss"] | toFixed(0) }} W</td>
         </tr>
@@ -136,7 +136,7 @@
                 </select>
             </td>
             <td>{{ elements["windows"]["area"] | toFixed(1) }} <sub>m2</sub></td>
-            <td>{{ elements["windows"]["uvalue"] | toFixed(2) }}</td>
+            <td><input type="text" class="form-control" v-model.number="elements['windows']['uvalue']" @change="custom_uvalue('windows')" style="width:80px"></td>
             <td>{{ elements["windows"]["heat_loss"] | toFixed(0) }} W</td>
         </tr>
         <tr>
@@ -147,7 +147,7 @@
                 </select>
             </td>
             <td>{{ elements["doors"]["area"] | toFixed(1) }} <sub>m2</sub></td>
-            <td>{{ elements["doors"]["uvalue"] | toFixed(2) }}</td>
+            <td><input type="text" class="form-control" v-model.number="elements['doors']['uvalue']" @change="custom_uvalue('doors')" style="width:80px"></td>
             <td>{{ elements["doors"]["heat_loss"] | toFixed(0) }} W</td>
         </tr>
         <tr>
@@ -158,7 +158,7 @@
                 </select>
             </td>
             <td>{{ elements["floor"]["area"] | toFixed(1) }} <sub>m2</sub></td>
-            <td>{{ elements["floor"]["uvalue"] | toFixed(2) }}</td>
+            <td><input type="text" class="form-control" v-model.number="elements['floor']['uvalue']" @change="custom_uvalue('floor')" style="width:80px"></td>
             <td>{{ elements["floor"]["heat_loss"] | toFixed(0) }} W</td>
         </tr>
         <tr>
@@ -168,7 +168,7 @@
                     <option v-for="(value, key) in roof_materials">{{ key }}</option>
                 </select>
             <td>{{ elements["roof"]["area"] | toFixed(1) }} <sub>m2</sub></td>
-            <td>{{ elements["roof"]["uvalue"] | toFixed(2) }}</td>
+            <td><input type="text" class="form-control" v-model.number="elements['roof']['uvalue']" @change="custom_uvalue('roof')" style="width:80px"></td>
             <td>{{ elements["roof"]["heat_loss"] | toFixed(0) }} W</td>
         </tr>
     </table>
@@ -348,23 +348,27 @@
                 "insulated 300mm": {"uvalue":0.12},
                 "insulated 200mm": {"uvalue":0.18},
                 "insulated 100mm": {"uvalue":0.33},
+                "custom": {"uvalue":0.0},
             },
 
             window_materials: {
                 "double glazed": {"uvalue":2.8},
                 "triple glazed": {"uvalue":1.0},
                 "single glazed": {"uvalue":4.8},
+                "custom": {"uvalue":0.0},
             },
 
             door_materials: {
                 "standard": {"uvalue":2.8},
                 "passivhaus": {"uvalue":0.8},
+                "custom": {"uvalue":0.0},
             },
 
             floor_materials: {
                 "slab to ground": {"uvalue":0.6},
                 "insulated slab": {"uvalue":0.3},
                 "suspended timber": {"uvalue":1.0},
+                "custom": {"uvalue":0.0},
             },
 
             roof_materials: {
@@ -372,6 +376,7 @@
                 "200mm insulated": {"uvalue":0.18},
                 "100mm insulated": {"uvalue":0.33},
                 "uninsulated": {"uvalue":2.0},
+                "custom": {"uvalue":0.0},
             },
 
             door_height: 2.0,
@@ -401,6 +406,39 @@
         methods: {
             update: function () {
                 app.model();
+            },
+
+            custom_uvalue: function (type) {
+
+                if (type === "external_wall") {
+                    this.selected_external_wall_material = 'custom';
+                    this.wall_materials['custom']['uvalue'] = this.elements['external wall']['uvalue'];
+                    this.wall_materials['custom']['cibse'] = this.elements['external wall']['cibse'];
+                }
+                if (type === "party_wall") {
+                    this.selected_party_wall_material = 'custom';
+                    this.wall_materials['custom']['uvalue'] = this.elements['party wall']['uvalue'];
+                    this.wall_materials['custom']['cibse'] = this.elements['party wall']['cibse'];
+                }
+                if (type === "floor") {
+                    this.selected_floor_material = 'custom';
+                    this.floor_materials['custom']['uvalue'] = this.elements['floor']['uvalue'];
+                }
+                if (type === "roof") {
+                    this.selected_roof_material = 'custom';
+                    this.roof_materials['custom']['uvalue'] = this.elements['roof']['uvalue'];
+                }
+                if (type === "windows") {
+                    this.selected_window_material = 'custom';
+                    this.window_materials['custom']['uvalue'] = this.elements['windows']['uvalue'];
+                }
+                if (type === "doors") {
+                    this.selected_door_material = 'custom';
+                    this.door_materials['custom']['uvalue'] = this.elements['doors']['uvalue'];
+                }
+
+                app.model();
+
             },
 
             parse_house_type: function (floor_area) {
