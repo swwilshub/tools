@@ -62,3 +62,15 @@ echo view("theme.php", array(
 if ($redis && $q != 'stats') {
     $redis->incr("tools:$q");
 }
+
+// Log request to /home/oem/tools/access.log
+/*
+$log_entry = sprintf(
+    "%s %s %s %s\n",
+    date('Y-m-d H:i:s'),
+    $_SERVER['REMOTE_ADDR'],
+    $q,
+    $_SERVER['REQUEST_URI']
+);
+file_put_contents('/home/oem/tools/access.log', $log_entry, FILE_APPEND);
+*/
