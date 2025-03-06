@@ -18,6 +18,12 @@ $menu = array(
         "title" => "Heat Pump System Performance Calculator",
         "description" => "Calculate heat pump SCOP based on design flow temperature"
     ),
+    "radschedule" => array(
+        "category" => "Heat Loss",
+        "case" => "RadSchedule",
+        "title" => "Radiator Schedule",
+        "description" => "Calculate radiator heat output"
+    ),
     "dynamic_heatpump_v1" => array(
         "category" => "Dynamic Simulation",
         "case" => "dynamic_heatpump_v1",
