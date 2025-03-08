@@ -35,8 +35,17 @@
             <div class="form-group">
                 <label for="room_temperature">Room temperature</label>
                 <div class="input-group mb-3">
-                    <input type="text" class="form-control" v-model.number="room_temperature" @change="update">
+                    <input type="text" class="form-control" v-model.number="global_room_temperature" @change="update" :disabled="!global_room_temperature_override">
                     <span class="input-group-text">°C</span>
+                    <!-- over-ride check box -->
+                     
+                    <span class="input-group-text">
+                        <label for="global_room_temperature_override">Override </label>
+                    </span>
+                    <span class="input-group-text">
+
+                        <input type="checkbox" v-model="global_room_temperature_override" @change="update">
+                    </span>
                 </div>
             </div>
         </div>
@@ -55,18 +64,22 @@
                         <th>Rated Output</th>
                         <th>Heat Output</th>
                         <th>Oversize Factor</th>
+                        <th>RoomT</th>
                         <th></th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr v-for="(radiator, index) in radiators" :key="index">
 
-                        <td>{{ radiator.type }}</td>
-                        <td>{{ radiator.length }}</td>
-                        <td>{{ radiator.height }}</td>
+                        <td><select class="form-select" v-model="radiator.type" @change="model">
+                            <option v-for="type in radiator_types" :value="type">{{ type }}</option>
+                        </select></td>
+                        <td><input type="text" v-model.number="radiator.length" @change="model" class="form-control" style="width:70px"></td>
+                        <td><input type="text" v-model.number="radiator.height" @change="model" class="form-control" style="width:70px"></td>
                         <td>{{ radiator.rated_output }} W</td>
                         <td>{{ radiator.heat_output }} W</td>
                         <td>{{ radiator.oversize_factor }}</td>
+                        <td><input type="text" v-model.number="radiator.roomT" @change="model" class="form-control" style="width:50px" :disabled="global_room_temperature_override"></td>
                         <td>
                             <button class="btn btn-danger btn-sm" @click="removeRadiator(index)">Remove</button>
                         </td>
@@ -106,6 +119,10 @@
                     <!-- Select radiator height -->
                     <span class="input-group-text">Height</span>
                     <input type="text" class="form-control" v-model.number="add_height" @change="validate_rad">
+
+                    <!-- Select room temperature -->
+                    <span class="input-group-text">RoomT</span>
+                    <input type="text" class="form-control" v-model.number="add_roomT" @change="validate_rad">
 
                     <button class="btn btn-primary" @click="addRadiator">Add radiator</button>
                 </div>
@@ -163,7 +180,8 @@
 
             flow_temperature: 40,
             return_DT: 5,
-            room_temperature: 20,
+            global_room_temperature: 20,
+            global_room_temperature_override: false,
 
             radiators: [],
 
@@ -173,7 +191,8 @@
             // Add radiator
             add_type: "K2",
             add_height: 600,
-            add_length: 1200
+            add_length: 1200,
+            add_roomT: 20
         },
         methods: {
             update: function () {
@@ -190,7 +209,15 @@
                     // Calculate mean water temperature and MWT - Room DT
                     var return_temperature = this.flow_temperature - this.return_DT;
                     var MWT = (this.flow_temperature + return_temperature) / 2;
-                    var DT = MWT - this.room_temperature;
+
+                    var roomT = this.global_room_temperature;
+                    if (!this.global_room_temperature_override) {
+                        roomT = radiator.roomT;
+                    }
+
+                    var DT = MWT - roomT;
+
+                    radiator.rated_output = this.calculate_rated_output(radiator.type, radiator.height, radiator.length);
 
                     // Radiator heat output equation
                     radiator.heat_output = Math.round(radiator.rated_output * Math.pow(DT / radiator.rated_DT, 1.3));
@@ -218,38 +245,26 @@
                 // Round to nearest
                 this.add_height = Math.round(this.add_height / 10) * 10;
                 this.add_length = Math.round(this.add_length / 100) * 100;
+
+                // roomT > 0 and < 30
+                if (this.add_roomT < 0) this.add_roomT = 0;
+                if (this.add_roomT > 30) this.add_roomT = 30;
             },
 
             addRadiator: function() {
 
                 this.add_height = parseInt(this.add_height);
                 this.add_length = parseInt(this.add_length);
+                this.add_roomT = parseInt(this.add_roomT);
 
-                var m = 0;
-                var output = 0;
+                // Calculate rated output
+                var output = this.calculate_rated_output(this.add_type, this.add_height, this.add_length);
 
-                if (this.add_type == "K1") {
-                    m = -0.000000454*Math.pow(this.add_height,2)+0.002017178*this.add_height-0.047435696;
-                    output = Math.round(m * this.add_length);
-                }
-                else if (this.add_type == "P+") {
-                    m = -0.000000567*Math.pow(this.add_height,2)+0.002620013*this.add_height+0.040997375;
-                    output = Math.round(m * this.add_length);
-                }
-                else if (this.add_type == "K2") {
-                    m = -0.00000058*Math.pow(this.add_height,2)+0.00308043*this.add_height+0.14058005;
-                }
-                else if (this.add_type == "K3") {
-                    m = -0.000000961*Math.pow(this.add_height,2)+0.004518773*this.add_height+0.1489;
-                }
-
-                output = Math.round(m * this.add_length);
-
-                
                 this.radiators.push({
                     type: this.add_type,
                     length: this.add_length,
                     height: this.add_height,
+                    roomT: this.add_roomT,
                     rated_output: output,
                     rated_DT: 50,
                     heat_output: 0,
@@ -275,6 +290,31 @@
                 }
                 this.radiators = [];
                 this.model();
+            },
+
+            calculate_rated_output: function(type, height, length) {
+                var m = 0;
+                var output = 0;
+
+                if (type == "K1") {
+                    m = -0.000000454*Math.pow(height,2)+0.002017178*height-0.047435696;
+                    output = Math.round(m * length);
+                }
+                else if (type == "P+") {
+                    m = -0.000000567*Math.pow(height,2)+0.002620013*height+0.040997375;
+                    output = Math.round(m * length);
+                }
+                else if (type == "K2") {
+                    m = -0.00000058*Math.pow(height,2)+0.00308043*height+0.14058005;
+                    output = Math.round(m * length);
+                }
+                else if (type == "K3") {
+                    m = -0.000000961*Math.pow(height,2)+0.004518773*height+0.1489;
+                }
+
+                output = Math.round(m * length);
+
+                return output;
             }
         }
     });
