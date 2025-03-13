@@ -36,7 +36,13 @@ var app = new Vue({
             
             Kp: 2500,
             Ki: 0.2,
-            Kd: 0.0
+            Kd: 0.0,
+
+            wc_Kp: 0,
+            wc_Ki: 0.1,
+            wc_Kd: 0.0,
+
+            curve: 1.0
         },
         schedule: [
             { start: "00:00", set_point: 17, flowT: 42, parallel_shift: 0 },
@@ -299,15 +305,24 @@ function sim(conf) {
             // a flow temperature to outside temperature relationship that is finely tuned to the physics of the building.
             
             if (app.control.wc_use_outside_mean) {
-                room_outside_DT = setpoint - app.external.mid
+                used_outside = app.external.mid
             } else {
-                room_outside_DT = setpoint - outside 
+                used_outside = outside 
             }
-            heat_requirement = room_outside_DT * app.building.fabric_WK
-            heatpump_heat = heat_requirement - app.building.internal_gains
-            rad_room_DT = Math.pow(heatpump_heat / app.heatpump.radiatorRatedOutput, 1 / 1.3) * app.heatpump.radiatorRatedDT
 
-            // MWT = setpoint + rad_room_DT
+            flowT_target = setpoint + 2.55 * Math.pow(app.control.curve*(setpoint - used_outside), 0.78);
+
+
+            last_error = error
+            error = flowT_target - flow_temperature
+
+            delta_error = error - last_error
+
+            PTerm = app.control.wc_Kp * error
+            ITerm += error * timestep
+            DTerm = delta_error / timestep
+
+            heatpump_heat = PTerm + (app.control.wc_Ki * ITerm) + (app.control.wc_Kd * DTerm)
         }
 
         // Apply limits

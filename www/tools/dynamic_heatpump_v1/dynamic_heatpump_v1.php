@@ -179,7 +179,43 @@
             </div>
             <div class="card" v-if="control.mode==1">
                 <div class="card-body">
+
+                    <label class="form-label">Weather compensation curve:</label>
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" v-model.number="control.curve" @change="simulate" />
+                    </div>
+
+
                 
+                    <label class="form-label">Flow temperature 3 term PID controller:</label>
+
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Proportional</label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Kp</span>
+                                <input type="text" class="form-control" v-model.number="control.wc_Kp"
+                                    @change="simulate" />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Integral</label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Ki</span>
+                                <input type="text" class="form-control" v-model.number="control.wc_Ki"
+                                    @change="simulate" />
+                            </div>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Derivative</label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Kd</span>
+                                <input type="text" class="form-control" v-model.number="control.wc_Kd"
+                                    @change="simulate" />
+                            </div>
+                        </div>
+                    </div>
+
                     <label class="form-label">Weather compensation outside temperature response:</label>
                     
                     <select class="form-control" v-model.number="control.wc_use_outside_mean" @change="simulate">
@@ -304,4 +340,4 @@
         </div>
     </div>
 </div>
-<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=9"></script>
+<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=10"></script>
