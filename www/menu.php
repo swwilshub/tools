@@ -66,6 +66,12 @@ $menu = array(
         "title" => "Volume simulator with heat pump COP",
         "description" => "Explore heat pump minimum modulation and cycling's effect of COP"
     ),
+    "volume_sim_cop2" => array(
+        "category" => "Dynamic Simulation",
+        "case" => "volume_sim_cop2",
+        "title" => "Volume simulator with heat pump COP and calculated radiator volume.",
+        "description" => "Explore heat pump minimum modulation and cycling's effect of COP (3.7 L/kW of K2 rad)"
+    ),
     "pressureloss" => array(
         "case" => "PressureLoss",
         "title" => "Pipe pressure loss calculator",
