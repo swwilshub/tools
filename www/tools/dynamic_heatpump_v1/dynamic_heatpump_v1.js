@@ -28,7 +28,8 @@ var app = new Vue({
             flow_rate: 12, // Litres per minute
             system_DT: 5,
             radiatorRatedOutput: 15000,
-            radiatorRatedDT: 50
+            radiatorRatedDT: 50,
+            prc_carnot: 50
         },
         control: {
             mode: AUTO_ADAPT,
@@ -233,7 +234,7 @@ function sim(conf) {
     var elec_kwh = 0;
     var heat_kwh = 0;
 
-    max_flowT = 0;
+    // max_flowT = 0;
     setpoint = 0;
     heatpump_heat = 0;
     heatpump_elec = 0;
@@ -275,7 +276,7 @@ function sim(conf) {
             let start = time_str_to_hour(schedule[j].start);
             if (hour >= start) {
                 setpoint = parseFloat(schedule[j].set_point);
-                max_flowT = parseFloat(schedule[j].flowT);
+                // max_flowT = parseFloat(schedule[j].flowT);
             }
         }
         
@@ -380,7 +381,7 @@ function sim(conf) {
         let condensor = flow_temperature + 2;
         let evaporator = outside - 6;
         let IdealCOP = (condensor + 273) / ((condensor + 273) - (evaporator + 273));
-        let PracticalCOP = 0.5 * IdealCOP;
+        let PracticalCOP = IdealCOP * (app.heatpump.prc_carnot / 100);
 
         if (PracticalCOP > 0) {
             heatpump_elec = heatpump_heat / PracticalCOP;

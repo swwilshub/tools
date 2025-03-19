@@ -72,7 +72,8 @@
                         <tr>
                             <th>Time</th>
                             <th>Set point</th>
-                            <th>Max FlowT</th>
+
+                            <!--<th>Max FlowT</th>-->
                             <th><button class="btn" @click="add_space"><i class="fas fa-plus"></i></button></th>
                         </tr>
                         <tr v-for="(item,index) in schedule">
@@ -85,13 +86,13 @@
                                     <span class="input-group-text">°C</span>
                                 </div>
                             </td>
-                            <td>
+                            <!--<td>
                                 <div class="input-group mb-3">
                                     <input type="text" class="form-control" v-model.number="item.flowT"
                                         @change="simulate" style="width:30px" />
                                     <span class="input-group-text">°C</span>
                                 </div>
-                            </td>
+                            </td>-->
                             <td><button class="btn" @click="delete_space(index)"><i
                                         class="fas fa-trash"></i></button></td>
                         </tr>
@@ -260,11 +261,11 @@
                             </div>
                         </div>
                         <div class="col">
-                            <label class="form-label">@ rated DT</label>
+                            <label class="form-label">Practical COP factor</label>
                             <div class="input-group mb-3">
-                                <input type="text" class="form-control" v-model.number="heatpump.radiatorRatedDT"
+                                <input type="text" class="form-control" v-model.number="heatpump.prc_carnot"
                                     @change="simulate" />
-                                <span class="input-group-text">K</span>
+                                <span class="input-group-text">%</span>
                             </div>
                         </div>
                     </div>
@@ -340,4 +341,4 @@
         </div>
     </div>
 </div>
-<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=10"></script>
+<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=12"></script>
