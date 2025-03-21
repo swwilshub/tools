@@ -412,4 +412,4 @@
         </div>
     </div>
 </div>
-<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=18"></script>
+<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=20"></script>
