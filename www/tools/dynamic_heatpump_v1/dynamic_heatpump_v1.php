@@ -7,6 +7,7 @@
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/fontawesome.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/solid.min.css">
+<script src="<?php echo $path_lib;?>ecodan.js?v=1"></script>
 
 <div class="container" style="max-width:1200px" id="app">
     <div class="row">
@@ -225,6 +226,28 @@
                     </select>
                     <br>
                     <p><i>Curve automatically selected based on building heat loss, internal gains and heat emitter spec.</i></p>
+
+
+                    <div class="row">
+                        <div class="col">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Limit by room set point</span>
+                                <span class="input-group-text"><input type="checkbox" v-model="control.limit_by_roomT" @change="simulate" /></span>
+                                
+                            </div>
+                        </div>
+                        <!-- roomT_hysteresis -->
+                        <div class="col">
+                            <label class="form-label">Room temperature hysteresis</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" v-model.number="control.roomT_hysteresis"
+                                    @change="simulate" />
+                                <span class="input-group-text">°C</span>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </div>
             </div>       
             <br>
@@ -260,17 +283,7 @@
                                 <span class="input-group-text">W</span>
                             </div>
                         </div>
-                        <div class="col">
-                            <label class="form-label">Practical COP factor</label>
-                            <div class="input-group mb-3">
-                                <input type="text" class="form-control" v-model.number="heatpump.prc_carnot"
-                                    @change="simulate" />
-                                <span class="input-group-text">%</span>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="row">
                         <div class="col">
                             <label class="form-label">Sytem volume</label>
                             <div class="input-group mb-3">
@@ -280,8 +293,30 @@
                                 <span class="input-group-text">L</span>
                             </div>
                         </div>
-                        <div class="col">
+
+                    </div>
+
+                    <div class="row">
+                        <dic class="col">
+                            <label class="form-label">COP Model</label>
+                            <div class="input-group mb-3">
+                                <select class="form-control" v-model="heatpump.cop_model" @change="simulate">
+                                    <option value="carnot_fixed">Carnot (fixed offsets flow+2, outside-6)</option>
+                                    <option value="carnot_variable">Carnot (variable offsets proportional to heat)</option>
+                                    <option value="ecodan">Ecodan datasheet</option>
+                                </select>
+                            </div>
+                        </dic>
+
+                        <div class="col" v-if="heatpump.cop_model!='ecodan'">
+                            <label class="form-label">Practical COP factor</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" v-model.number="heatpump.prc_carnot"
+                                    @change="simulate" />
+                                <span class="input-group-text">%</span>
+                            </div>
                         </div>
+
                     </div>
 
                 </div>
@@ -340,4 +375,4 @@
         </div>
     </div>
 </div>
-<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=12"></script>
+<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=18"></script>

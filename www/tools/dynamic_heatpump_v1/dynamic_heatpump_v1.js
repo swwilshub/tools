@@ -29,7 +29,8 @@ var app = new Vue({
             system_DT: 5,
             radiatorRatedOutput: 15000,
             radiatorRatedDT: 50,
-            prc_carnot: 50
+            prc_carnot: 47,
+            cop_model: "carnot_fixed"
         },
         control: {
             mode: AUTO_ADAPT,
@@ -39,11 +40,13 @@ var app = new Vue({
             Ki: 0.2,
             Kd: 0.0,
 
-            wc_Kp: 0,
-            wc_Ki: 0.1,
+            wc_Kp: 500,
+            wc_Ki: 0.05,
             wc_Kd: 0.0,
 
-            curve: 1.0
+            curve: 1.0,
+            limit_by_roomT: false,
+            roomT_hysteresis: 0.5
         },
         schedule: [
             { start: "00:00", set_point: 17, flowT: 42, parallel_shift: 0 },
@@ -247,6 +250,8 @@ function sim(conf) {
     flow_temperature = room;
     return_temperature = room;
     MWT_off = 200;
+
+    heatpump_max_roomT_state = 0;
     
 
     var ramp_up = outside_max_time - outside_min_time;
@@ -314,16 +319,32 @@ function sim(conf) {
             flowT_target = setpoint + 2.55 * Math.pow(app.control.curve*(setpoint - used_outside), 0.78);
 
 
-            last_error = error
-            error = flowT_target - flow_temperature
+            if (app.control.limit_by_roomT) {
+                if (room>setpoint+app.control.roomT_hysteresis) {
+                    heatpump_max_roomT_state = 1;
+                }
 
-            delta_error = error - last_error
+                if (heatpump_max_roomT_state==1 && room<setpoint) {
+                    heatpump_max_roomT_state = 0;
+                }
+            }
 
-            PTerm = app.control.wc_Kp * error
-            ITerm += error * timestep
-            DTerm = delta_error / timestep
+            if (heatpump_max_roomT_state==0) {
+            
+                last_error = error
+                error = flowT_target - flow_temperature
 
-            heatpump_heat = PTerm + (app.control.wc_Ki * ITerm) + (app.control.wc_Kd * DTerm)
+                delta_error = error - last_error
+
+                PTerm = app.control.wc_Kp * error
+                ITerm += error * timestep
+                DTerm = delta_error / timestep
+
+                heatpump_heat = PTerm + (app.control.wc_Ki * ITerm) + (app.control.wc_Kd * DTerm)
+            } else {
+                heatpump_heat = 0;
+            }
+
         }
 
         // Apply limits
@@ -346,12 +367,12 @@ function sim(conf) {
             MWT_off = MWT;
             heatpump_state = 0;
         }
-        
+
         // Set heat pump heat to zero if state is off
         if (heatpump_state==0) {
-             heatpump_heat = 0;
+            heatpump_heat = 0;
         }
-        
+
         // Implementation includes system volume
 
         // Important conceptual simplification is to model the whole system as a single volume of water
@@ -371,17 +392,28 @@ function sim(conf) {
         // 3. Subtract this heat output from MWT
         MWT -= (radiator_heat * timestep) / (app.heatpump.system_water_volume * 4187)
         
-
         let system_DT = heatpump_heat / ((app.heatpump.flow_rate / 60) * 4187);
 
         flow_temperature = MWT + (system_DT * 0.5);
         return_temperature = MWT - (system_DT * 0.5);
 
-        // Simple carnot equation based heat pump model
-        let condensor = flow_temperature + 2;
-        let evaporator = outside - 6;
-        let IdealCOP = (condensor + 273) / ((condensor + 273) - (evaporator + 273));
-        let PracticalCOP = IdealCOP * (app.heatpump.prc_carnot / 100);
+        var PracticalCOP = 0;
+        if (app.heatpump.cop_model == "carnot_fixed") {
+            // Simple carnot equation based heat pump model with fixed offsets
+            let condenser = flow_temperature + 2;
+            let evaporator = outside - 6;
+            let IdealCOP = (condenser + 273) / ((condenser + 273) - (evaporator + 273));
+            PracticalCOP = IdealCOP * (app.heatpump.prc_carnot / 100);
+        } else if (app.heatpump.cop_model == "carnot_variable") {
+            // Simple carnot equation based heat pump model with variable offsets
+            let output_ratio = heatpump_heat / app.heatpump.capacity;
+            let condenser = flow_temperature + (3 * output_ratio);
+            let evaporator = outside - (8 * output_ratio);
+            let IdealCOP = (condenser + 273) / ((condenser + 273) - (evaporator + 273));
+            PracticalCOP = IdealCOP * (app.heatpump.prc_carnot / 100);
+        } else if (app.heatpump.cop_model == "ecodan") {
+            PracticalCOP = get_ecodan_cop(flow_temperature, outside, heatpump_heat / app.heatpump.capacity);
+        }
 
         if (PracticalCOP > 0) {
             heatpump_elec = heatpump_heat / PracticalCOP;
