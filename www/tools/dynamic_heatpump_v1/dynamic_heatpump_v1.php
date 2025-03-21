@@ -140,6 +140,7 @@
                     <select class="form-control" v-model="control.mode" @change="simulate">
                         <option value=0>Auto adapt 3 term PID controller</option>
                         <option value=1>Weather compensation with parallel shift</option>
+                        <option value=3>Fixed speed compressor (on/off thermostat)</option>
                     </select>
 
                 </div>
@@ -249,7 +250,43 @@
 
 
                 </div>
-            </div>       
+            </div>
+            
+            <div class="card" v-if="control.mode==3">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Compressor speed</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" v-model.number="control.fixed_compressor_speed" @change="simulate" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Limit</label>
+                            <div class="input-group mb-3">
+                                <span class="input-group-text">Limit by room set point</span>
+                                <span class="input-group-text"><input type="checkbox" v-model="control.limit_by_roomT" @change="simulate" /></span>
+                                
+                            </div>
+                        </div>
+                        <!-- roomT_hysteresis -->
+                        <div class="col">
+                            <label class="form-label">Room temperature hysteresis</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" v-model.number="control.roomT_hysteresis"
+                                    @change="simulate" />
+                                <span class="input-group-text">°C</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div> 
+            
+
             <br>
 
             <div class="card">

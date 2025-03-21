@@ -1,6 +1,7 @@
 
 var AUTO_ADAPT = 0;
 var WEATHER_COMP_CURVE = 1;
+var FIXED_SPEED = 3;
 
 var app = new Vue({
     el: '#app',
@@ -46,7 +47,9 @@ var app = new Vue({
 
             curve: 1.0,
             limit_by_roomT: false,
-            roomT_hysteresis: 0.5
+            roomT_hysteresis: 0.5,
+
+            fixed_compressor_speed: 100
         },
         schedule: [
             { start: "00:00", set_point: 17, flowT: 42, parallel_shift: 0 },
@@ -217,6 +220,9 @@ function sim(conf) {
         heat_data = [];
     }
 
+    if (app.control.fixed_compressor_speed>100) app.control.fixed_compressor_speed = 100;
+    if (app.control.fixed_compressor_speed<40) app.control.fixed_compressor_speed = 40;
+
     var outside_min_time = conf.outside_min_time;
     var outside_max_time = conf.outside_max_time;
     var schedule = conf.schedule;
@@ -320,11 +326,11 @@ function sim(conf) {
 
 
             if (app.control.limit_by_roomT) {
-                if (room>setpoint+app.control.roomT_hysteresis) {
+                if (room>setpoint+(app.control.roomT_hysteresis*0.5)) {
                     heatpump_max_roomT_state = 1;
                 }
 
-                if (heatpump_max_roomT_state==1 && room<setpoint) {
+                if (heatpump_max_roomT_state==1 && room<setpoint-(app.control.roomT_hysteresis*0.5)) {
                     heatpump_max_roomT_state = 0;
                 }
             }
@@ -345,6 +351,24 @@ function sim(conf) {
                 heatpump_heat = 0;
             }
 
+        } else if (app.control.mode==FIXED_SPEED) {
+            heatpump_heat = app.heatpump.capacity;
+
+            if (app.control.limit_by_roomT) {
+                if (room>setpoint+(app.control.roomT_hysteresis*0.5)) {
+                    heatpump_max_roomT_state = 1;
+                }
+
+                if (heatpump_max_roomT_state==1 && room<setpoint-(app.control.roomT_hysteresis*0.5)) {
+                    heatpump_max_roomT_state = 0;
+                }
+            }
+
+            if (heatpump_max_roomT_state==0) {
+                heatpump_heat = 1.0 * app.heatpump.capacity * (app.control.fixed_compressor_speed / 100);
+            } else {
+                heatpump_heat = 0;
+            }
         }
 
         // Apply limits
