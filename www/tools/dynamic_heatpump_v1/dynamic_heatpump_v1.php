@@ -15,8 +15,7 @@
             <br>
             <h3>Dynamic heat pump simulator</h3>
             <p>Explore continuous vs intermittent heating, temperature set-backs and schedules.</p>
-            <div class="alert alert-warning"><i class="fa-solid fa-person-digging"></i> This tool is work in
-                progress. It does not implement defrosts and assumes instant efficiency from the heat pump at start up. Help welcome to make this tool better.</div>
+            <div class="alert alert-warning"><i class="fa-solid fa-person-digging"></i> Please help improve this <b>open source</b> heat pump simulator, see source code below.</div>
         </div>
     </div>
     <div class="row">
