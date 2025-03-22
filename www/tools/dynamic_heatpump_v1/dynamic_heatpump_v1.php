@@ -24,45 +24,55 @@
         </div>
     </div>
     <br><br>
+
+
     <div class="row">
         <div class="col">
-            <label class="form-label">Electric input</label>
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" :value="results.elec_kwh | toFixed(3)" disabled>
-                <span class="input-group-text">kWh</span>
-            </div>
-        </div>
-        <div class="col">    
-            <label class="form-label">Saving vs steady state</label>
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" :value="results.elec_saving_prc | toFixed(2)" disabled>
-                <span class="input-group-text">%</span>
-            </div>
-        </div>
-        <div class="col">
-            <label class="form-label">Heat output</label>
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" :value="results.heat_kwh | toFixed(3)" disabled>
-                <span class="input-group-text">kWh</span>
-            </div>
-        </div>
-        <div class="col">
-            <label class="form-label">Saving vs steady state</label>
-            <div class="input-group mb-3">
-                <input type="text" class="form-control" :value="results.heat_saving_prc | toFixed(2)" disabled>            
-                <span class="input-group-text">%</span>
-            </div>
-        </div>
-        <div class="col">
-            <label class="form-label">COP</label>
-            <span class="input-group mb-3">
-                <input type="text" class="form-control" :value="(results.heat_kwh/results.elec_kwh) | toFixed(2)"
-                    disabled>
-                <button type="button" class="btn btn-warning" @click="simulate">Refine</button>
+            <div class="card">
+                <div class="card-body">
 
-            </span>
+                    <table class="table">
+                        <tr>
+                            <th>Name</th>
+                            <th>Mean temp</th>
+                            <th>Max temp</th>
+                            <th>Electric</th>
+                            <th>Heat</th>
+                            <th>COP</th>
+                        </tr>
+                        <tr v-if="baseline_enabled" style="background-color:#f0f0f0">
+                            <td>Baseline</td>
+                            <td>{{ baseline.mean_room_temp | toFixed(2) }} °C</td>
+                            <td>{{ baseline.max_room_temp | toFixed(2) }} °C</td>
+                            <td>{{ baseline.elec_kwh | toFixed(3) }} kWh</td>
+                            <td>{{ baseline.heat_kwh | toFixed(3) }} kWh</td>
+                            <td>{{ (baseline.heat_kwh/baseline.elec_kwh) | toFixed(2) }}</td>
+                        </tr>
+                        <tr class="table-success">
+                            <td>Current</td>
+                            <td>{{ results.mean_room_temp | toFixed(2) }} °C</td>
+                            <td>{{ results.max_room_temp | toFixed(2) }} °C</td>
+                            <td>{{ results.elec_kwh | toFixed(3) }} kWh</td>
+                            <td>{{ results.heat_kwh | toFixed(3) }} kWh</td>
+                            <td>{{ (results.heat_kwh/results.elec_kwh) | toFixed(2) }}</td>
+                        </tr>
+                        <tr v-if="baseline_enabled" class="table-info">
+                            <td>Saving</td>
+                            <td>{{ (results.mean_room_temp-baseline.mean_room_temp) | toFixed(2) }} °C</td>
+                            <td>{{ (results.max_room_temp-baseline.max_room_temp) | toFixed(2) }} °C</td>
+                            <td>{{ (results.elec_kwh-baseline.elec_kwh)*-1 | toFixed(3) }} kWh ({{ ((results.elec_kwh-baseline.elec_kwh)/baseline.elec_kwh*-100) | toFixed(1) }}%)</td>
+                            <td>{{ (results.heat_kwh-baseline.heat_kwh)*-1 | toFixed(3) }} kWh ({{ ((results.heat_kwh-baseline.heat_kwh)/baseline.heat_kwh*-100) | toFixed(1) }}%)</td>
+                            <td>{{ ((results.heat_kwh/results.elec_kwh)-(baseline.heat_kwh/baseline.elec_kwh)) | toFixed(2) }}</td>
+
+                        </tr>
+                    </table>
+                    <button type="button" class="btn btn-warning" @click="simulate" style="float:right">Refine</button>
+                    <button type="button" class="btn btn-warning" @click="save_baseline">Save as baseline</button>
+                </div>
+            </div>
         </div>
     </div>
+    <br>
     <div class="row">
         <div class="col">
             <div class="card">
@@ -98,7 +108,7 @@
                         </tr>
                     </table>
 
-                    <div class="alert alert-info"><b>Room temp reached maximum of: {{ max_room_temp | toFixed(2) }} °C.</b><br>Steady state comparison is based on {{ max_schedule_temp | toFixed(2) }} °C</div>
+                    <div class="alert alert-info"><b>Room temp reached maximum of: {{ max_room_temp | toFixed(2) }} °C.</b></div>
                 </div>
             </div>
             <br>
@@ -411,4 +421,4 @@
         </div>
     </div>
 </div>
-<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=20"></script>
+<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=21"></script>

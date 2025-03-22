@@ -61,14 +61,24 @@ var app = new Vue({
         results: {
             elec_kwh: 0,
             heat_kwh: 0,
-            elec_saving_prc: 0,
-            heat_saving_prc: 0
+            mean_room_temp: 0,
+            max_room_temp: 0
         },
+        baseline: {
+            elec_kwh: 0,
+            heat_kwh: 0,
+            mean_room_temp: 0,
+            max_room_temp: 0
+        },
+        baseline_enabled: false,
         refinements: 3,
         max_room_temp: 0,
-        max_schedule_temp: 0
     },
     methods: {
+        save_baseline: function () {
+            this.baseline = JSON.parse(JSON.stringify(this.results));
+            this.baseline_enabled = true;
+        },
         simulate: function () {
             console.log("Simulating");
 
@@ -106,41 +116,11 @@ var app = new Vue({
                 schedule: app.schedule
             });
             app.max_room_temp = result.max_room_temp;
+
             app.results.elec_kwh = result.elec_kwh;
             app.results.heat_kwh = result.heat_kwh;
-
-            console.log(result);
-
-            // Steady state comparison
-
-            // Get maximum room set point in app.schedule
-            let max_schedule_temp = 0;
-            for (let i = 0; i < app.schedule.length; i++) {
-                if (app.schedule[i].set_point > max_schedule_temp) {
-                    max_schedule_temp = app.schedule[i].set_point;
-                }
-            }
-            app.max_schedule_temp = max_schedule_temp;
-
-            var steady_state_schedule = [
-                // { start: "00:00", set_point: result.max_room_temp, flowT: 500, parallel_shift: 0 },
-                { start: "00:00", set_point: max_schedule_temp, flowT: 500, parallel_shift: 0 },
-            ];
-
-            var steady_state_result = false;
-            for (var i = 0; i < app.refinements; i++) {
-                steady_state_result = sim({
-                    record_timeseries: false,
-                    outside_min_time: outside_min_time,
-                    outside_max_time: outside_max_time,
-                    schedule: steady_state_schedule
-                });
-            }
-
-            console.log(steady_state_result)
-
-            app.results.elec_saving_prc = 100* (1-(app.results.elec_kwh / steady_state_result.elec_kwh))
-            app.results.heat_saving_prc = 100* (1-(app.results.heat_kwh / steady_state_result.heat_kwh))
+            app.results.mean_room_temp = result.mean_room_temp;
+            app.results.max_room_temp = result.max_room_temp;
 
             plot();
         },
@@ -203,6 +183,9 @@ app.refinements = 5;
 app.simulate();
 app.refinements = 3;
 
+app.baseline = JSON.parse(JSON.stringify(app.results));
+app.baseline_enabled = false;
+
 function update_fabric_starting_temperatures() {
     t1 = app.building.fabric[0].T;
     t2 = app.building.fabric[1].T;
@@ -262,6 +245,8 @@ function sim(conf) {
 
     var ramp_up = outside_max_time - outside_min_time;
     var ramp_down = 24 - ramp_up;
+
+    var room_temp_sum = 0;
     
     for (var i = 0; i < itterations; i++) {
         let time = i * timestep;
@@ -465,6 +450,8 @@ function sim(conf) {
             max_room_temp = room;
         }
 
+        room_temp_sum += room;
+
         // Populate time series data arrays for plotting
         if (conf.record_timeseries) {
             let timems = time*1000;
@@ -480,42 +467,12 @@ function sim(conf) {
     return {
         elec_kwh: elec_kwh / app.days,
         heat_kwh: heat_kwh / app.days,
-        max_room_temp: max_room_temp
+        max_room_temp: max_room_temp,
+        mean_room_temp: room_temp_sum / itterations
     }
     
     // Automatic refinement, disabled for now, running simulation 3 times instead.
     // if (Math.abs(start_t1 - t1) > hs * 1.0) sim();
-}
-
-
-
-// Simulation vs ideal steady state comparison does not work well as steady state calculation
-// does not capture things like mild weather cycling and other dynamic effects.
-function calculate_steady_state(){
-    // Calculate steady state comparison
-    console.log(app.max_room_temp)
-    let dT = app.max_room_temp - app.external.mid;
-    let heat_demand = app.building.fabric_WK * dT;
-    let heating_demand = heat_demand - app.building.internal_gains
-    let heating_demand_kwh = heating_demand * 0.024;
-
-    // Steady state flow temperature
-    dT = Math.pow(heating_demand / app.heatpump.radiatorRatedOutput, 1 / 1.3) * app.heatpump.radiatorRatedDT;
-    let MWT = app.max_room_temp + dT;
-    let system_DT = heating_demand / ((app.heatpump.flow_rate / 60) * 4187);
-    let flow_temperature = MWT + system_DT * 0.5;
-
-    // Steady state COP
-    let condensor = flow_temperature + 2;
-    let evaporator = app.external.mid - 6;
-    let IdealCOP = (condensor + 273) / ((condensor + 273) - (evaporator + 273));
-    let PracticalCOP = 0.5 * IdealCOP;
-
-    // Steady state electric demand 
-    let heatpump_elec_kwh = heating_demand_kwh / PracticalCOP;
-
-    app.results.elec_saving_prc = 100* (1-(app.results.elec_kwh / heatpump_elec_kwh))
-    app.results.heat_saving_prc = 100* (1-(app.results.heat_kwh / heating_demand_kwh))
 }
 
 function plot() {
