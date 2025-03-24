@@ -3,6 +3,19 @@ var AUTO_ADAPT = 0;
 var WEATHER_COMP_CURVE = 1;
 var FIXED_SPEED = 3;
 
+
+
+var price_cap = 24.86;
+var cosy_examples_schedule = [
+    { start: "00:00", set_point: 18, price: 26.98 },
+    { start: "04:00", set_point: 21, price: 13.23 },
+    { start: "07:00", set_point: 19.5, price: 26.98 },
+    { start: "13:00", set_point: 21, price: 13.23 },
+    { start: "16:00", set_point: 19, price: 40.47 },
+    { start: "19:00", set_point: 19.5, price: 26.98 },
+    { start: "22:00", set_point: 19, price: 13.23 }
+];
+
 var app = new Vue({
     el: '#app',
     data: {
@@ -31,7 +44,9 @@ var app = new Vue({
             radiatorRatedOutput: 15000,
             radiatorRatedDT: 50,
             prc_carnot: 47,
-            cop_model: "carnot_fixed"
+            cop_model: "carnot_fixed",
+            standby: 11,
+            pumps: 15,
         },
         control: {
             mode: AUTO_ADAPT,
@@ -52,29 +67,34 @@ var app = new Vue({
             fixed_compressor_speed: 100
         },
         schedule: [
-            { start: "00:00", set_point: 17, flowT: 42, parallel_shift: 0 },
-            { start: "07:00", set_point: 18, flowT: 42, parallel_shift: 0 },
-            { start: "16:00", set_point: 19, flowT: 42, parallel_shift: 0 },
-            { start: "22:00", set_point: 17, flowT: 42, parallel_shift: 0 }
-
+            { start: "00:00", set_point: 17, price: price_cap },
+            { start: "06:00", set_point: 18, price: price_cap },
+            { start: "15:00", set_point: 19, price: price_cap },
+            { start: "22:00", set_point: 17, price: price_cap }
         ],
         results: {
             elec_kwh: 0,
             heat_kwh: 0,
             mean_room_temp: 0,
-            max_room_temp: 0
+            max_room_temp: 0,
+            total_cost: 0
         },
         baseline: {
             elec_kwh: 0,
             heat_kwh: 0,
             mean_room_temp: 0,
-            max_room_temp: 0
+            max_room_temp: 0,
+            total_cost: 0
         },
         baseline_enabled: false,
         refinements: 3,
         max_room_temp: 0,
     },
     methods: {
+        load_octopus_cosy: function () {
+            this.schedule = JSON.parse(JSON.stringify(cosy_examples_schedule));
+            this.simulate();
+        },
         save_baseline: function () {
             this.baseline = JSON.parse(JSON.stringify(this.results));
             this.baseline_enabled = true;
@@ -121,6 +141,7 @@ var app = new Vue({
             app.results.heat_kwh = result.heat_kwh;
             app.results.mean_room_temp = result.mean_room_temp;
             app.results.max_room_temp = result.max_room_temp;
+            app.results.total_cost = result.total_cost;
 
             plot();
         },
@@ -222,6 +243,7 @@ function sim(conf) {
 
     var timestep = 30;
     var itterations = 3600 * 24 * app.days / timestep;
+    var start_of_last_day = 3600 * 24 * (app.days-1) / timestep;
 
     var elec_kwh = 0;
     var heat_kwh = 0;
@@ -247,6 +269,9 @@ function sim(conf) {
     var ramp_down = 24 - ramp_up;
 
     var room_temp_sum = 0;
+
+    var total_cost = 0;
+    var price = 0;
     
     for (var i = 0; i < itterations; i++) {
         let time = i * timestep;
@@ -272,6 +297,7 @@ function sim(conf) {
             let start = time_str_to_hour(schedule[j].start);
             if (hour >= start) {
                 setpoint = parseFloat(schedule[j].set_point);
+                price = parseFloat(schedule[j].price);
                 // max_flowT = parseFloat(schedule[j].flowT);
             }
         }
@@ -430,9 +456,17 @@ function sim(conf) {
             heatpump_elec = 0;
         }
 
+        // Add standby power and pump power
+        if (heatpump_elec > 0) {
+            heatpump_elec += app.heatpump.pumps;
+        }
+        heatpump_elec += app.heatpump.standby;
+
         // Calculate energy use
         elec_kwh += heatpump_elec * power_to_kwh;
         heat_kwh += heatpump_heat * power_to_kwh;
+
+        total_cost += heatpump_elec * power_to_kwh * price * 0.01;
 
         // Building fabric model
 
@@ -453,7 +487,7 @@ function sim(conf) {
         room_temp_sum += room;
 
         // Populate time series data arrays for plotting
-        if (conf.record_timeseries) {
+        if (conf.record_timeseries && i > start_of_last_day) {
             let timems = time*1000;
             roomT_data.push([timems, room]);
             outsideT_data.push([timems, outside]);
@@ -468,7 +502,8 @@ function sim(conf) {
         elec_kwh: elec_kwh / app.days,
         heat_kwh: heat_kwh / app.days,
         max_room_temp: max_room_temp,
-        mean_room_temp: room_temp_sum / itterations
+        mean_room_temp: room_temp_sum / itterations,
+        total_cost: total_cost / app.days
     }
     
     // Automatic refinement, disabled for now, running simulation 3 times instead.

@@ -39,6 +39,7 @@
                             <th>Electric</th>
                             <th>Heat</th>
                             <th>COP</th>
+                            <th>Cost</th>
                         </tr>
                         <tr v-if="baseline_enabled" style="background-color:#f0f0f0">
                             <td>Baseline</td>
@@ -47,6 +48,7 @@
                             <td>{{ baseline.elec_kwh | toFixed(3) }} kWh</td>
                             <td>{{ baseline.heat_kwh | toFixed(3) }} kWh</td>
                             <td>{{ (baseline.heat_kwh/baseline.elec_kwh) | toFixed(2) }}</td>
+                            <td>£{{ baseline.total_cost | toFixed(2) }}</td>
                         </tr>
                         <tr class="table-success">
                             <td>Current</td>
@@ -55,6 +57,7 @@
                             <td>{{ results.elec_kwh | toFixed(3) }} kWh</td>
                             <td>{{ results.heat_kwh | toFixed(3) }} kWh</td>
                             <td>{{ (results.heat_kwh/results.elec_kwh) | toFixed(2) }}</td>
+                            <td>£{{ results.total_cost | toFixed(2) }}</td>
                         </tr>
                         <tr v-if="baseline_enabled" class="table-info">
                             <td>Saving</td>
@@ -63,6 +66,7 @@
                             <td>{{ (results.elec_kwh-baseline.elec_kwh)*-1 | toFixed(3) }} kWh ({{ ((results.elec_kwh-baseline.elec_kwh)/baseline.elec_kwh*-100) | toFixed(1) }}%)</td>
                             <td>{{ (results.heat_kwh-baseline.heat_kwh)*-1 | toFixed(3) }} kWh ({{ ((results.heat_kwh-baseline.heat_kwh)/baseline.heat_kwh*-100) | toFixed(1) }}%)</td>
                             <td>{{ ((results.heat_kwh/results.elec_kwh)-(baseline.heat_kwh/baseline.elec_kwh)) | toFixed(2) }}</td>
+                            <td>£{{ (results.total_cost-baseline.total_cost)*-1 | toFixed(2) }}</td>
 
                         </tr>
                     </table>
@@ -82,6 +86,7 @@
                         <tr>
                             <th>Time</th>
                             <th>Set point</th>
+                            <th>Price</th>
 
                             <!--<th>Max FlowT</th>-->
                             <th><button class="btn" @click="add_space"><i class="fas fa-plus"></i></button></th>
@@ -96,19 +101,21 @@
                                     <span class="input-group-text">°C</span>
                                 </div>
                             </td>
-                            <!--<td>
+                            <td>
                                 <div class="input-group mb-3">
-                                    <input type="text" class="form-control" v-model.number="item.flowT"
+                                    <input type="text" class="form-control" v-model.number="item.price"
                                         @change="simulate" style="width:30px" />
-                                    <span class="input-group-text">°C</span>
                                 </div>
-                            </td>-->
+                            </td>
                             <td><button class="btn" @click="delete_space(index)"><i
                                         class="fas fa-trash"></i></button></td>
                         </tr>
                     </table>
 
                     <div class="alert alert-info"><b>Room temp reached maximum of: {{ max_room_temp | toFixed(2) }} °C.</b></div>
+
+                    <!-- button to load Octopus Cosy schedule example -->
+                    <button type="button" class="btn btn-warning" @click="load_octopus_cosy">Load Octopus Cosy schedule example</button>
                 </div>
             </div>
             <br>
@@ -365,6 +372,24 @@
 
                     </div>
 
+                    <div class="row">
+                        <div class="col">
+                            <label class="form-label">Standby/controls</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" v-model.number="heatpump.standby" @change="simulate" />
+                                <span class="input-group-text">W</span>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Pump power</label>
+                            <div class="input-group mb-3">
+                                <input type="text" class="form-control" v-model.number="heatpump.pumps" @change="simulate" />
+                                <span class="input-group-text">W</span>
+                            </div>
+                        </div>
+                    </div>
+
+
                 </div>
             </div>
             <br>
@@ -421,4 +446,4 @@
         </div>
     </div>
 </div>
-<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=21"></script>
+<script src="<?php echo $path; ?>dynamic_heatpump_v1.js?v=23"></script>
