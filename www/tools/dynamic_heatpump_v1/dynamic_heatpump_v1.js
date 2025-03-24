@@ -476,9 +476,13 @@ function sim(conf) {
         h1 = u2 * (t2 - t1) - u1 * (t1 - outside);
         
         // 2. Calculate change in temperature
-        room += (h3 * timestep) / k3;
-        t2 += (h2 * timestep) / k2;
-        t1 += (h1 * timestep) / k1;
+        // Thermal inertia parameter (0 < inertia ≤ 1), lower values mean higher inertia
+        var thermal_inertia = 0.9; // Adjust this value to tune the building response
+
+        // Update temperatures with inertia factor
+        room += thermal_inertia * ((h3 * timestep) / k3);
+        t2 += thermal_inertia * ((h2 * timestep) / k2);
+        t1 += thermal_inertia * ((h1 * timestep) / k1);
 
         if (room>max_room_temp){
             max_room_temp = room;
