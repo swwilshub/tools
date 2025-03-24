@@ -148,6 +148,19 @@
             </div>
         </div>
         <div class="col">
+
+            <div class="card">
+    <div class="card-body">
+        <label class="form-label"><b>Thermal Inertia</b></label>
+        <div class="input-group mb-3">
+            <input type="number" step="0.05" min="0.1" max="1.0" class="form-control"
+                v-model.number="control.thermal_inertia" @change="simulate"/>
+            <span class="input-group-text">0.1 (heavy) - 1.0 (light)</span>
+        </div>
+        <small class="text-muted">Adjust to simulate different levels of thermal mass.</small>
+    </div>
+</div>
+
             <div class="card">
                 <div class="card-body">
 
