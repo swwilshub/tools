@@ -44,7 +44,7 @@ var app = new Vue({
             radiatorRatedOutput: 15000,
             radiatorRatedDT: 50,
             prc_carnot: 47,
-            cop_model: "carnot_fixed",
+            cop_model: "carnot_variable",
             standby: 11,
             pumps: 15,
         },
